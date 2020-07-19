@@ -1,0 +1,1 @@
+* * * * *    /usr/bin/php YNH_DOMAIN/admin/cli/cron.php >/dev/null

@@ -1,0 +1,233 @@
+#!/bin/bash
+
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source _common.sh
+source /usr/share/yunohost/helpers
+source ynh_add_extra_apt_repos__3
+source ynh_install_php__3
+
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
+
+ynh_clean_setup () {
+	### Remove this function if there's nothing to clean before calling the remove script.
+	true
+}
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# RETRIEVE ARGUMENTS FROM THE MANIFEST
+#=================================================
+
+domain=$YNH_APP_ARG_DOMAIN
+path_url=$YNH_APP_ARG_PATH
+is_public=$YNH_APP_ARG_IS_PUBLIC
+silent_install=$YNH_APP_ARG_SILENT_INSTALL
+language=$YNH_APP_ARG_LANGUAGE
+admin=moodleadmin
+password=$YNH_APP_ARG_PASSWORD
+
+app=$YNH_APP_INSTANCE_NAME
+
+#=================================================
+# CHECK IF THE APP CAN BE INSTALLED WITH THESE ARGS
+#=================================================
+
+final_path=/var/www/$app
+test ! -e "$final_path" || ynh_die "This path already contains a folder"
+
+# Normalize the url path syntax
+path_url=$(ynh_normalize_url_path $path_url)
+
+# Check web path availability
+ynh_webpath_available $domain $path_url
+# Register (book) web path
+ynh_webpath_register $app $domain $path_url
+
+#=================================================
+# STORE SETTINGS FROM MANIFEST
+#=================================================
+ynh_script_progression --message="Storing installation settings..." --time --weight=1
+
+ynh_app_setting_set --app=$app --key=domain --value=$domain
+ynh_app_setting_set --app=$app --key=path --value=$path_url
+ynh_app_setting_set --app=$app --key=is_public --value=$is_public
+
+#=================================================
+# STANDARD MODIFICATIONS
+#=================================================
+
+#=================================================
+# INSTALL DEPENDENCIES
+#=================================================
+
+ynh_install_php --phpversion=$PHPVERSION --package="$pkg_dependencies"
+
+#=================================================
+# CREATE A MYSQL DATABASE
+#=================================================
+ynh_script_progression --message="Creating a MySQL database..." --time --weight=1
+
+db_name=$(ynh_sanitize_dbid --db_name=$app)
+ynh_app_setting_set --app=$app --key=db_name --value=$db_name
+ynh_mysql_setup_db --db_user=$db_name --db_name=$db_name
+
+#=================================================
+# CREATE DEDICATED USER
+#=================================================
+ynh_script_progression --message="Configuring system user..." --time --weight=1
+
+# Create a system user
+ynh_system_user_create $app
+
+#=================================================
+# DOWNLOAD, CHECK AND UNPACK SOURCE
+#=================================================
+ynh_script_progression --message="Setting up source files..." --time --weight=1
+
+ynh_app_setting_set $app final_path $final_path
+ynh_install_moodle
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring nginx web server..." --time --weight=1
+
+# Create a dedicated nginx config
+ynh_add_nginx_config
+
+#=================================================
+# PHP-FPM CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring php-fpm..." --time --weight=1
+
+# Create a dedicated php-fpm config
+ynh_add_fpm_config --phpversion=$PHPVERSION
+update-alternatives --set php /usr/bin/php$PHPVERSION
+
+#=================================================
+# SPECIFIC SETUP
+#=================================================
+# SETUP config file
+#=================================================
+
+var_root=/home/yunohost.app/$app
+db_pwd=$(ynh_app_setting_get --app=$app --key=mysqlpwd)
+
+# Create the home directory
+mkdir -p $var_root $var_root/lang
+chown -R $app: $var_root
+chmod -R 700 $var_root
+
+if [ $silent_install -eq 0 ]; then
+	cp  ../conf/config.php $final_path/.
+	ynh_replace_string "YNH_DB_USER" "$app" "$final_path/config.php"
+	ynh_replace_string "YNH_APP" "$db_name" "$final_path/config.php"
+	ynh_replace_string "YNH_DB_PWD" "$db_pwd" "$final_path/config.php"
+	ynh_replace_string "YNH_DOMAIN" "$domain" "$final_path/config.php"
+	if [ "$path_url" = "/" ]; then
+		ynh_replace_string "YNH_WWW_PATH" "" "$final_path/config.php"
+	else
+		ynh_replace_string "YNH_WWW_PATH" "$path_url" "$final_path/config.php"
+	fi
+	ynh_replace_string "YNH_VAR_ROOT" "$var_root" "$final_path/config.php"
+
+	ynh_install_moodle_language
+fi
+
+#=================================================
+# SETUP APPLICATION WITH CURL
+#=================================================
+
+# Set right permissions for curl install
+chown -R $app: $final_path
+
+if [ $silent_install -eq 1 ]; then
+        ynh_print_info "Install now Moodle. Be patient!"
+
+        if [ "$path_url" = "/" ]; then
+                WWWROOT="https://${domian}"
+        else
+                WWWROOT="https://${domain}${path_url}"
+        fi
+
+        sudo -u $app php$PHPVERSION $final_path/admin/cli/install.php \
+        --non-interactive \
+        --agree-license \
+        --lang=$language \
+        --wwwroot=$WWWROOT \
+        --dataroot=$var_root \
+        --dbtype=mariadb \
+        --dbhost=localhost \
+        --dbname=$db_name \
+        --dbuser=$app \
+        --dbpass=$db_pwd \
+        --dbport=3306 \
+        --fullname="Moodle" \
+        --shortname="MOODLE" \
+        --summary="Moodle - open source learning platform" \
+        --adminuser=$admin\
+        --adminpass=$password \
+        --adminemail=${admin}@${domain}
+
+	# Install MOOSH
+	ynh_install_moosh
+
+	# Set LDAP
+	ynh_install_moodle_ldap
+fi
+
+# Set php7.0 back as the default version for php-cli.
+update-alternatives --set php /usr/bin/php7.0
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+
+# Set permissions to app files
+chown  root:$app $final_path/config.php
+
+# Calculate and store the config file checksum into the app settings
+ynh_store_file_checksum "$final_path/config.php"
+
+# Set up poller
+echo "* * * * *    /usr/bin/php$PHPVERSION $final_path/admin/cli/cron.php >/dev/null" > /etc/cron.d/$app
+
+#=================================================
+# SETUP SSOWAT
+#=================================================
+
+if [ $is_public -eq 0 ]
+then	# Remove the public access
+	ynh_app_setting_delete $app skipped_uris
+fi
+# Make app public if necessary
+if [ $is_public -eq 1 ]
+then
+	# unprotected_uris allows SSO credentials to be passed anyway.
+	ynh_app_setting_set $app unprotected_uris "/"
+fi
+
+yunohost app ssowatconf
+
+#=================================================
+# RELOAD NGINX
+#=================================================
+ynh_script_progression --message="Reloading nginx web server..." --time --weight=1
+
+ynh_systemd_action --service_name=nginx --action=reload
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression --message="Installation of $app completed" --time --last
