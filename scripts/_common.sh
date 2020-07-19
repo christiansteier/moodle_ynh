@@ -15,33 +15,6 @@ pkg_dependencies="php$PHPVERSION-zip php$PHPVERSION-mysql php$PHPVERSION-xml php
 MOODLE_VERSION=3
 MOODLE_RELEASE=7
 
-ynh_install_composer() {
-	EXPECTED_SIGNATURE="$(wget -q -O - https://composer.github.io/installer.sig)"
-	php$PHPVERSION -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-	ACTUAL_SIGNATURE="$(php$PHPVERSION -r "echo hash_file('sha384', 'composer-setup.php');")"
-
-	if [ "$EXPECTED_SIGNATURE" != "$ACTUAL_SIGNATURE" ]; then
-		>&2 ynh_print_info "ERROR: Invalid installer signature for composer"
-		rm composer-setup.php
-		exit 1
-	fi
-	php$PHPVERSION composer-setup.php  --install-dir=/usr/local/bin --filename=composer --quiet
-	RESULT=$?
-	rm composer-setup.php
-}
-
-ynh_install_moosh() {
-	ynh_install_composer
-	if [ ! -d /opt/moosh ]; then
-		ynh_print_info "Installing MOOSH..."
-		if [ ! -d /opt ]; then mkdir /opt ; fi
-		git clone git://github.com/tmuras/moosh.git /opt/moosh 
-		cd /opt/moosh
-		composer install
-		ln -s /opt/moosh/moosh.php /bin/moosh
-	fi
-}
-
 ynh_install_moodle() {
         ynh_print_info "Downloading Moodle..."
         local MOODLE_APP="https://download.moodle.org/download.php/direct/stable${MOODLE_VERSION}${MOODLE_RELEASE}/moodle-latest-${MOODLE_VERSION}${MOODLE_RELEASE}.tgz"
@@ -75,23 +48,16 @@ ynh_install_moodle_language() {
 ynh_install_moodle_ldap() {
 	mysql <<-EOF
 USE ${db_name};
-UPDATE mdl_config_plugins SET value = 'localhost' WHERE plugin = 'auth_ldap' AND name = 'host_url';
-UPDATE mdl_config_plugins SET value = 'ou=users,dc=yunohost,dc=org' WHERE plugin = 'auth_ldap' AND name = 'contexts';
-UPDATE mdl_config_plugins SET value = 'uid' WHERE plugin = 'auth_ldap' AND name = 'user_attribute';
-UPDATE mdl_config_plugins SET value = '(objectClass=mailAccount)'WHERE plugin = 'auth_ldap' AND name = 'objectclass';
-UPDATE mdl_config_plugins SET value = 'givenName' WHERE plugin = 'auth_ldap' AND name = 'field_map_firstname';
-UPDATE mdl_config_plugins SET value = 'sn' WHERE plugin = 'auth_ldap' AND name = 'field_map_lastname';
-UPDATE mdl_config_plugins SET value = 'mail' WHERE plugin = 'auth_ldap' AND name = 'field_map_email';
-UPDATE mdl_config SET value = 'email,ldap' WHERE name = 'auth';
+UPDATE mdl_config_plugins SET value='ldap,email' WHERE name='auth';"
+UPDATE mdl_config_plugins SET value='ldap://127.0.0.1/' WHERE plugin='auth_ldap' AND name='host_url';"
+UPDATE mdl_config_plugins SET value='uid' WHERE plugin='auth_ldap' AND name='user_attribute';"
+UPDATE mdl_config_plugins SET value='ou=users,dc=yunohost,dc=org' WHERE plugin='auth_ldap' AND name='contexts';"
+UPDATE mdl_config_plugins SET value='givenName' WHERE plugin='auth_ldap' AND name='field_map_firstname';"
+UPDATE mdl_config_plugins SET value='sn' WHERE plugin='auth_ldap' AND name='field_map_lastname';"
+UPDATE mdl_config_plugins SET value='mail' WHERE plugin='auth_ldap' AND name='field_map_email';"
+UPDATE mdl_config_plugins SET value='onlogin' WHERE plugin='auth_ldap' AND (name='field_updatelocal_firstname' OR name='field_updatelocal_lastname' OR name='field_updatelocal_email');"
+UPDATE mdl_config_plugins SET value='locked' WHERE plugin='auth_ldap' AND (name='field_lock_firstname' OR name='field_lock_lastname' OR name='field_lock_email');"
 EOF
-
-
-ldapsearch -x -LLL uid=* | grep uid: | cut -d: -f2 | sed "s* **g" > accounts
-while read LINE; do
-	cd $final_path
-	sudo -u $app moosh user-create $LINE
-	sudo -u $app moosh user-mod -a ldap $LINE
-done < accounts
 
 }
 
