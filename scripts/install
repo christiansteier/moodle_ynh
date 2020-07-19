@@ -153,7 +153,7 @@ if [ $silent_install -eq 1 ]; then
         ynh_print_info "Install now Moodle. Be patient!"
 
         if [ "$path_url" = "/" ]; then
-                WWWROOT="https://${domian}"
+                WWWROOT="https://${domain}"
         else
                 WWWROOT="https://${domain}${path_url}"
         fi
@@ -176,9 +176,6 @@ if [ $silent_install -eq 1 ]; then
         --adminuser=$admin\
         --adminpass=$password \
         --adminemail=${admin}@${domain}
-
-	# Install MOOSH
-	ynh_install_moosh
 
 	# Set LDAP
 	ynh_install_moodle_ldap

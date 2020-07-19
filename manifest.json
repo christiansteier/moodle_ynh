@@ -3,10 +3,11 @@
     "id": "moodle",
     "packaging_format": 1,
     "description": {
-        "en": "Moodle package for YunoHost application.",
-		"fr": "Moodle de packagey d’application pour YunoHost."
+        "en": "An online learning platform",
+	"fr": "Une plateforme d'apprentissage en ligne",
+	"de": "Eine Online-Lernplattform"
     },
-    "version": "3.8+",
+    "version": "3.7+",
     "url": "https://moodle.org/",
     "license": "free",
     "maintainer": {
@@ -28,7 +29,8 @@
                 "type": "domain",
                 "ask": {
                     "en": "Choose a domain name for Moodle",
-                    "fr": "Choisissez un nom de domaine pour Moodle"
+                    "fr": "Choisissez un nom de domaine pour Moodle",
+		    "de": "Unter welcher Deiner Domains soll Moodle verfügbar sein?"
                 },
                 "example": "example.com"
             },
@@ -37,7 +39,8 @@
                 "type": "path",
                 "ask": {
                     "en": "Choose a path for Moodle",
-                    "fr": "Choisissez un chemin pour Moodle"
+                    "fr": "Choisissez un chemin pour Moodle",
+		    "de": "Wie soll der Pfad lauten?"
                 },
                 "example": "/mdl",
                 "default": "/mdl"
@@ -47,7 +50,8 @@
                 "type": "boolean",
                 "ask": {
                     "en": "Is it a public application?",
-                    "fr": "Est-ce une application publique ?"
+                    "fr": "Est-ce une application publique?",
+		    "de": "Soll die Plattform öffentlich zur Verfügung stehen?"
                 },
                 "default": true
             },
@@ -57,7 +61,8 @@
                 "optional": true,
                 "ask": {
                     "en": "Do you want to perform a silent install?",
-                    "fr": "Voulez-vous effectuer une installation silencieuse ?"
+                    "fr": "Voulez-vous effectuer une installation silencieuse?",
+		    "de": "Unbeaufsichtige Installation? [empfohlen]"
                 },
                 "default": true
 	    },
@@ -66,7 +71,8 @@
 		"optional": true,
                 "ask": {
                     "en": "Choose the application language",
-                    "fr": "Choisissez la langue de l'application"
+                    "fr": "Choisissez la langue de l'application",
+		    "de": "Welche Sprache soll installiert werden?"
                 },
                 "choices": ["de", "en", "fr"],
                 "default": "en"
@@ -77,11 +83,8 @@
 		"optional": true,
                 "ask": {
                     "en": "[Silent install only!] Set the administrator password for user 'moodleadmin'",
-                    "fr": "[Installation silencieuse uniquement!] Définissez le mot de passe administrateur pour l'utilisateur 'moodleadmin'"
-                },
-                "help": {
-                    "en": "Use the help field to add an information for the admin about this question.",
-                    "fr": "Utilisez le champ aide pour ajouter une information à l'intention de l'administrateur à propos de cette question."
+                    "fr": "[Installation silencieuse uniquement!] Définissez le mot de passe administrateur pour l'utilisateur 'moodleadmin'",
+		    "de": "[Nur wichtig für unbeaufsichtigte Installation] Gib ein Passwort für das Admin-Konto 'moodleadmin' ein"
                 },
                 "example": "Choose a password",
 		"default": "moodleadmin"
