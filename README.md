@@ -1,33 +1,45 @@
 # Moodle app for YunoHost
-[![Install Moodle with YunoHost](https://install-app.yunohost.org/install-with-yunohost.png)](https://install-app.yunohost.org/?app=Moodle)<br><br>
+[![Integration level](https://dash.yunohost.org/integration/moodle.svg)](https://dash.yunohost.org/appci/app/moodle) ![](https://ci-apps.yunohost.org/ci/badges/moodle.status.svg)   
+[![Install Moodle with YunoHost](https://install-app.yunohost.org/install-with-yunohost.png)](https://install-app.yunohost.org/?app=moodle)
 
-Version: **3.7+**
-Moodle - the world's open source learning platform
+> *This package allows you to install Moodle quickly and simply on a YunoHost server.  
+If you don't have YunoHost, please consult [the guide](https://yunohost.org/#/install) to learn how to install it.*
 
-Moodle <https://moodle.org> is a learning platform designed to provide
-educators, administrators and learners with a single robust, secure and
-integrated system to create personalised learning environments.
+## Overview
+[Moodle](https://moodle.org) is a learning platform designed to provide educators, administrators and learners with a single robust, secure and integrated system to create personalised learning environments.
 
-Moodle is widely used around the world by universities, schools, companies and
-all manner of organisations and individuals.
+Moodle is widely used around the world by universities, schools, companies and all manner of organisations and individuals.
 
-# Installation
-** After the installation go to your domain https://domain.tld/moodle and create the admin account. **
+**Shipped version:** 3.7 with MySQL as database
 
-### Installing guide
+**IMPORTAND:** During the installation the MySQL format is centrally changed to [Barracuda](https://mariadb.com/kb/en/innodb-file-format/#barracuda). There is an offical support Version with postqress as database: https://github.com/YunoHost-Apps/moodle_ynh
 
- 1. App can be installed by YunoHost **admin web-interface** or by **running following command**:
+## Screenshots
 
-         $ sudo yunohost app install https://github.com/christiansteier/moodle_ynh
+![](https://docs.moodle.org/39/en/images_en/3/30/Moodle_Modern_Interface2_March_2017.png)
 
- 
-### Upgrade this package:
+## Demo
 
-        $ sudo yunohost app upgrade moodle -u https://github.com/christiansteier/moodle_ynh
+* [Official demo](https://sandbox.moodledemo.net/)
+
+## Configuration
+
+How to configure this app: by an admin panel.
+
+## Documentation
+
+ * Official documentation: https://docs.moodle.org/37/en/Main_page
+
+## YunoHost specific features
+
+#### Multi-user support
+
+* Are LDAP and HTTP auth supported? **Yes** 
+* Can the app be used by multiple users? **Yes**
 
 ## To-do
 - [X] Install script
 - [X] Remove script
 - [ ] Upgrade script
-- [X] Backup and Restore scripts(need testing)
+- [X] Backup and Restore scripts (need testing)
 - [X] LDAP integration (silent installation only!)
